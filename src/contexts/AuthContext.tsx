@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { toast } from "sonner";
 
@@ -177,6 +176,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       if (!authState.token) throw new Error("Not authenticated");
       
+      console.log('Updating user profile with data:', userData);
+      console.log('Using token:', authState.token);
+      
       const response = await fetch(`${API_URL}/api/user/me`, {
         method: "POST",
         headers: { 
@@ -186,12 +188,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         body: JSON.stringify(userData),
       });
 
+      console.log('Profile update response status:', response.status);
+      
       if (!response.ok) {
         const error = await response.json();
+        console.error('Profile update error:', error);
         throw new Error(error.message || "Failed to update profile");
       }
 
       const updatedUser = await response.json();
+      console.log('Profile update successful:', updatedUser);
       
       setAuthState(prev => ({
         ...prev,
@@ -203,6 +209,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       toast.success("Profile updated successfully");
     } catch (error: any) {
+      console.error('Profile update error:', error);
       toast.error(error.message || "Failed to update profile");
       throw error;
     }
@@ -213,6 +220,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       if (!authState.token) throw new Error("Not authenticated");
       
+      console.log('Updating address with data:', addressData);
+      console.log('Using token:', authState.token);
+      
       const response = await fetch(`${API_URL}/api/user/address/update`, {
         method: "POST",
         headers: { 
@@ -222,13 +232,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         body: JSON.stringify(addressData),
       });
 
+      console.log('Address update response status:', response.status);
+      
       if (!response.ok) {
         const error = await response.json();
+        console.error('Address update error:', error);
         throw new Error(error.message || "Failed to update address");
       }
 
+      console.log('Address update successful');
       toast.success("Address updated successfully");
     } catch (error: any) {
+      console.error('Address update error:', error);
       toast.error(error.message || "Failed to update address");
       throw error;
     }
