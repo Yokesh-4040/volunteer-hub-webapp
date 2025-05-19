@@ -1,9 +1,9 @@
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +12,9 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
 import { Textarea } from '@/components/ui/textarea';
+
+// Define the API URL
+const API_URL = "https://api.aiapplabs.io";
 
 // Years for the establishment dropdown
 const currentYear = new Date().getFullYear();
@@ -35,16 +38,17 @@ type NGOProfileFormValues = z.infer<typeof ngoProfileSchema>;
 
 export default function NGOProfile() {
   const navigate = useNavigate();
-  const { updateUserProfile, updateAddress, user } = useAuth();
+  const { updateUserProfile, updateAddress, user, token } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [isFetching, setIsFetching] = useState(true);
 
   const form = useForm<NGOProfileFormValues>({
     resolver: zodResolver(ngoProfileSchema),
     defaultValues: {
-      first: user?.first || '',
-      phone: user?.phone || '',
-      establishementYear: user?.additionalInfo?.establishementYear || '',
-      description: user?.additionalInfo?.description || '',
+      first: '',
+      phone: '',
+      establishementYear: '',
+      description: '',
       organizationType: '',
       street: '',
       city: '',
@@ -53,6 +57,52 @@ export default function NGOProfile() {
       country: 'India',
     },
   });
+
+  // Fetch user details when component mounts
+  useEffect(() => {
+    const fetchUserDetails = async () => {
+      if (!token) {
+        navigate('/login');
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_URL}/api/user/me`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch user details');
+        }
+
+        const userData = await response.json();
+        console.log('Fetched user data:', userData);
+
+        // Update form with fetched data
+        form.reset({
+          first: userData.first || '',
+          phone: userData.phone || '',
+          establishementYear: userData.additionalInfo?.establishementYear || '',
+          description: userData.additionalInfo?.description || '',
+          organizationType: userData.additionalInfo?.organizationType || '',
+          street: userData.address?.street || '',
+          city: userData.address?.city || '',
+          state: userData.address?.state || '',
+          zipCode: userData.address?.zipCode || '',
+          country: userData.address?.country || 'India',
+        });
+      } catch (error) {
+        console.error('Error fetching user details:', error);
+        toast.error('Failed to load user details');
+      } finally {
+        setIsFetching(false);
+      }
+    };
+
+    fetchUserDetails();
+  }, [token, form, navigate]);
 
   async function onSubmit(data: NGOProfileFormValues) {
     setIsLoading(true);
@@ -97,195 +147,201 @@ export default function NGOProfile() {
 
         <Card className="overflow-hidden rounded-xl border shadow-lg">
           <CardContent className="p-8">
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                {/* Organization Name */}
-                <FormField
-                  control={form.control}
-                  name="first"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Organization Name</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="Organization Name" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Phone Number */}
-                <FormField
-                  control={form.control}
-                  name="phone"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Phone Number</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="Phone Number" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Year of Establishment */}
-                <FormField
-                  control={form.control}
-                  name="establishementYear"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Year of Establishment</FormLabel>
-                      <Select 
-                        onValueChange={field.onChange} 
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select year" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent className="max-h-80">
-                          {years.map((year) => (
-                            <SelectItem key={year} value={year}>
-                              {year}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Organization Type */}
-                <FormField
-                  control={form.control}
-                  name="organizationType"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Organization Type</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="Organization Type (e.g., Nonprofit, Foundation)" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Description */}
-                <FormField
-                  control={form.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Description</FormLabel>
-                      <FormControl>
-                        <Textarea 
-                          {...field} 
-                          placeholder="Tell us about your organization"
-                          className="min-h-[120px]"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div className="grid grid-cols-1 gap-6 pt-4 md:grid-cols-2">
-                  {/* Street */}
+            {isFetching ? (
+              <div className="flex justify-center py-8">
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-green-600 border-t-transparent"></div>
+              </div>
+            ) : (
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                  {/* Organization Name */}
                   <FormField
                     control={form.control}
-                    name="street"
+                    name="first"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Street</FormLabel>
+                        <FormLabel>Organization Name</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="Street Address" />
+                          <Input {...field} placeholder="Organization Name" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
 
-                  {/* City */}
+                  {/* Phone Number */}
                   <FormField
                     control={form.control}
-                    name="city"
+                    name="phone"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>City</FormLabel>
+                        <FormLabel>Phone Number</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="City" />
+                          <Input {...field} placeholder="Phone Number" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
 
-                  {/* State */}
+                  {/* Year of Establishment */}
                   <FormField
                     control={form.control}
-                    name="state"
+                    name="establishementYear"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>State</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="State" />
-                        </FormControl>
+                        <FormLabel>Year of Establishment</FormLabel>
+                        <Select 
+                          onValueChange={field.onChange} 
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select year" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent className="max-h-80">
+                            {years.map((year) => (
+                              <SelectItem key={year} value={year}>
+                                {year}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
 
-                  {/* Zip Code */}
+                  {/* Organization Type */}
                   <FormField
                     control={form.control}
-                    name="zipCode"
+                    name="organizationType"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Zip Code</FormLabel>
+                        <FormLabel>Organization Type</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="Postal Code" />
+                          <Input {...field} placeholder="Organization Type (e.g., Nonprofit, Foundation)" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
 
-                  {/* Country */}
+                  {/* Description */}
                   <FormField
                     control={form.control}
-                    name="country"
+                    name="description"
                     render={({ field }) => (
-                      <FormItem className="col-span-2">
-                        <FormLabel>Country</FormLabel>
+                      <FormItem>
+                        <FormLabel>Description</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="Country" />
+                          <Textarea 
+                            {...field} 
+                            placeholder="Tell us about your organization"
+                            className="min-h-[120px]"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                </div>
 
-                <div className="pt-4">
-                  <Button
-                    type="submit"
-                    className="w-full bg-green-600 text-white hover:bg-green-700"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? "Saving..." : "Sign up"}
-                  </Button>
-                </div>
-                
-                <div className="text-center text-xs text-gray-500">
-                  <p>
-                    We use your personal data to improve delivery of volunteer link services. You can learn more in our Terms of Use and Privacy Policy.
-                  </p>
-                </div>
-              </form>
-            </Form>
+                  <div className="grid grid-cols-1 gap-6 pt-4 md:grid-cols-2">
+                    {/* Street */}
+                    <FormField
+                      control={form.control}
+                      name="street"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Street</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Street Address" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* City */}
+                    <FormField
+                      control={form.control}
+                      name="city"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>City</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="City" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* State */}
+                    <FormField
+                      control={form.control}
+                      name="state"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>State</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="State" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* Zip Code */}
+                    <FormField
+                      control={form.control}
+                      name="zipCode"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Zip Code</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Postal Code" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* Country */}
+                    <FormField
+                      control={form.control}
+                      name="country"
+                      render={({ field }) => (
+                        <FormItem className="col-span-2">
+                          <FormLabel>Country</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Country" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="pt-4">
+                    <Button
+                      type="submit"
+                      className="w-full bg-green-600 text-white hover:bg-green-700"
+                      disabled={isLoading}
+                    >
+                      {isLoading ? "Saving..." : "Sign up"}
+                    </Button>
+                  </div>
+                  
+                  <div className="text-center text-xs text-gray-500">
+                    <p>
+                      We use your personal data to improve delivery of volunteer link services. You can learn more in our Terms of Use and Privacy Policy.
+                    </p>
+                  </div>
+                </form>
+              </Form>
+            )}
           </CardContent>
         </Card>
       </div>
