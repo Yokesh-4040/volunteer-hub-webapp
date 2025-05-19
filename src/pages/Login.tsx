@@ -16,7 +16,6 @@ import { useAuth } from '@/contexts/AuthContext';
 const loginSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
   password: z.string().min(5, { message: "Password must be at least 5 characters" }),
-  role: z.enum(['user', 'ngo']),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
@@ -32,14 +31,14 @@ export default function Login() {
     defaultValues: {
       email: '',
       password: '',
-      role: 'ngo',
     },
   });
 
   async function onSubmit(data: LoginFormValues) {
     setIsLoading(true);
     try {
-      await login(data.email, data.password, data.role);
+      // Always login as NGO role
+      await login(data.email, data.password, 'ngo');
       navigate('/dashboard');
     } catch (error) {
       console.error(error);
@@ -54,7 +53,7 @@ export default function Login() {
         <div className="text-center">
           <h2 className="text-3xl font-extrabold text-gray-900">Login</h2>
           <p className="mt-2 text-sm text-gray-600">
-            Sign in to access your account
+            Sign in to access your NGO account
           </p>
         </div>
 
@@ -68,29 +67,6 @@ export default function Login() {
           <CardContent className="space-y-6 p-6">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex justify-center space-x-6">
-                    <label className="flex items-center space-x-2">
-                      <input
-                        type="radio"
-                        value="user"
-                        {...form.register("role")}
-                        className="h-4 w-4 text-green-600"
-                      />
-                      <span>Volunteer</span>
-                    </label>
-                    <label className="flex items-center space-x-2">
-                      <input
-                        type="radio"
-                        value="ngo"
-                        {...form.register("role")}
-                        className="h-4 w-4 text-green-600"
-                      />
-                      <span>NGO</span>
-                    </label>
-                  </div>
-                </div>
-
                 <FormField
                   control={form.control}
                   name="email"

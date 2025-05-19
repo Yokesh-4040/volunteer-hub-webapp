@@ -17,7 +17,6 @@ const registerSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
   password: z.string().min(5, { message: "Password must be at least 5 characters" }),
   confirmPassword: z.string().min(5, { message: "Password must be at least 5 characters" }),
-  role: z.enum(['user', 'ngo']),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
@@ -38,14 +37,14 @@ export default function Register() {
       email: '',
       password: '',
       confirmPassword: '',
-      role: 'ngo',
     },
   });
 
   async function onSubmit(data: RegisterFormValues) {
     setIsLoading(true);
     try {
-      await registerUser(data.email, data.password, data.role);
+      // Always register as NGO role
+      await registerUser(data.email, data.password, 'ngo');
       navigate('/verify-otp', { state: { email: data.email } });
     } catch (error) {
       console.error(error);
@@ -60,7 +59,7 @@ export default function Register() {
         <div className="text-center">
           <h2 className="text-3xl font-extrabold text-gray-900">Sign Up</h2>
           <p className="mt-2 text-sm text-gray-600">
-            Create your Volunteer Link account
+            Create your Volunteer Link NGO account
           </p>
         </div>
 
@@ -80,29 +79,6 @@ export default function Register() {
           <CardContent className="space-y-6 p-6">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex justify-center space-x-6">
-                    <label className="flex items-center space-x-2">
-                      <input
-                        type="radio"
-                        value="user"
-                        {...form.register("role")}
-                        className="h-4 w-4 text-green-600"
-                      />
-                      <span>Volunteer</span>
-                    </label>
-                    <label className="flex items-center space-x-2">
-                      <input
-                        type="radio"
-                        value="ngo"
-                        {...form.register("role")}
-                        className="h-4 w-4 text-green-600" 
-                      />
-                      <span>NGO</span>
-                    </label>
-                  </div>
-                </div>
-
                 <FormField
                   control={form.control}
                   name="email"
