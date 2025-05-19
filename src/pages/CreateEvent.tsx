@@ -13,6 +13,10 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useAuth } from "@/contexts/AuthContext";
 import { Link } from "react-router-dom";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
+import { toast } from "sonner";
+
+// Define the correct API URL
+const API_URL = "https://api.aiapplabs.io";
 
 // Schema for form validation
 const eventSchema = z.object({
@@ -70,7 +74,7 @@ export default function CreateEvent() {
         location: values.location,
       };
 
-      const response = await fetch("https://your-api-url.com/api/event/ngo/create", {
+      const response = await fetch(`${API_URL}/api/event/ngo/create`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -84,11 +88,14 @@ export default function CreateEvent() {
         throw new Error(errorData.message || "Failed to create event");
       }
 
+      // Show success toast
+      toast.success("Event created successfully!");
+      
       // On success, navigate to events page
-      navigate("/events", { state: { eventCreated: true } });
+      navigate("/dashboard", { state: { eventCreated: true } });
     } catch (error: any) {
       console.error("Error creating event:", error);
-      // Handle error (show toast, etc.)
+      toast.error(`Failed to create event: ${error.message || "Unknown error"}`);
     } finally {
       setIsLoading(false);
     }
