@@ -38,7 +38,7 @@ interface AuthContextType extends AuthState {
   resendOtp: (email: string) => Promise<void>;
 }
 
-const API_URL = "https://your-api-url.com"; // Replace with your actual API URL
+const API_URL = "https://api.aiapplabs.io"; // Updated to the correct API URL
 
 // Create the auth context
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
