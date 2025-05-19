@@ -17,6 +17,20 @@ import { toast } from "sonner";
 // Define the correct API URL
 const API_URL = "https://api.aiapplabs.io";
 
+// Add retry logic
+const fetchWithRetry = async (url: string, options: RequestInit, retries = 3) => {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const response = await fetch(url, options);
+      return response;
+    } catch (error) {
+      if (i === retries - 1) throw error;
+      // Wait for 1 second before retrying
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+  }
+};
+
 // Schema for form validation
 const eventSchema = z.object({
   title: z.string().min(3, { message: "Title must be at least 3 characters" }),
@@ -73,33 +87,52 @@ export default function CreateEvent() {
         location: values.location,
       };
 
-      console.log("Submitting event data:", eventData);
-      console.log("Using token:", token);
+      // Log request details
+      const headers = {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+        "Accept": "application/json",
+      };
+
+      console.log("Request details:", {
+        url: `${API_URL}/api/event/ngo/create`,
+        method: "POST",
+        headers: {
+          ...headers,
+          "Authorization": "Bearer [REDACTED]" // Don't log the actual token
+        },
+        body: eventData
+      });
 
       // Create AbortController for timeout
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
 
       try {
         const response = await fetch(`${API_URL}/api/event/ngo/create`, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`,
-            "Accept": "application/json",
-          },
+          headers,
           body: JSON.stringify(eventData),
           signal: controller.signal,
         });
 
         clearTimeout(timeoutId);
 
+        // Log response details
+        console.log("Response details:", {
+          status: response.status,
+          statusText: response.statusText,
+          headers: Object.fromEntries(response.headers.entries()),
+          url: response.url
+        });
+
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({ message: "Unknown error occurred" }));
           console.error("API Error Response:", {
             status: response.status,
             statusText: response.statusText,
-            error: errorData
+            error: errorData,
+            url: response.url
           });
           throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
         }
@@ -114,7 +147,7 @@ export default function CreateEvent() {
         navigate("/dashboard", { state: { eventCreated: true } });
       } catch (fetchError: any) {
         if (fetchError.name === 'AbortError') {
-          throw new Error("Request timed out. Please try again.");
+          throw new Error("Request timed out. Please check your internet connection and try again.");
         }
         throw fetchError;
       }
