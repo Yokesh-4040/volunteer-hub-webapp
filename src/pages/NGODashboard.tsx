@@ -22,6 +22,9 @@ interface Event {
   image?: string;
 }
 
+// Define the correct API URL
+const API_URL = "https://api.aiapplabs.io";
+
 export default function NGODashboard() {
   const { user, token } = useAuth();
   const [events, setEvents] = useState<Event[]>([]);
@@ -34,7 +37,7 @@ export default function NGODashboard() {
       if (!token) return;
 
       try {
-        const response = await fetch("https://your-api-url.com/api/event/ngo/list", {
+        const response = await fetch(`${API_URL}/api/event/ngo/list`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
