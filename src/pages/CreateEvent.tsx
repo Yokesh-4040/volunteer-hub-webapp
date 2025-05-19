@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
@@ -77,29 +76,54 @@ export default function CreateEvent() {
       console.log("Submitting event data:", eventData);
       console.log("Using token:", token);
 
-      const response = await fetch(`${API_URL}/api/event/ngo/create`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(eventData),
-      });
+      // Create AbortController for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
-      const responseData = await response.json();
-      console.log("API response:", responseData);
+      try {
+        const response = await fetch(`${API_URL}/api/event/ngo/create`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+            "Accept": "application/json",
+          },
+          body: JSON.stringify(eventData),
+          signal: controller.signal,
+        });
 
-      if (!response.ok) {
-        throw new Error(responseData.message || "Failed to create event");
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ message: "Unknown error occurred" }));
+          console.error("API Error Response:", {
+            status: response.status,
+            statusText: response.statusText,
+            error: errorData
+          });
+          throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        }
+
+        const responseData = await response.json();
+        console.log("API response:", responseData);
+
+        // Show success toast
+        toast.success("Event created successfully!");
+        
+        // On success, navigate to events page
+        navigate("/dashboard", { state: { eventCreated: true } });
+      } catch (fetchError: any) {
+        if (fetchError.name === 'AbortError') {
+          throw new Error("Request timed out. Please try again.");
+        }
+        throw fetchError;
       }
-
-      // Show success toast
-      toast.success("Event created successfully!");
-      
-      // On success, navigate to events page
-      navigate("/dashboard", { state: { eventCreated: true } });
     } catch (error: any) {
-      console.error("Error creating event:", error);
+      console.error("Error creating event:", {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      });
       toast.error(`Failed to create event: ${error.message || "Unknown error"}`);
     } finally {
       setIsLoading(false);
