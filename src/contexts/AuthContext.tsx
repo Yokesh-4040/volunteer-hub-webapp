@@ -1,0 +1,328 @@
+
+import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { toast } from "sonner";
+
+// Define types for our authentication context
+interface User {
+  uuid: string;
+  email: string;
+  first?: string;
+  last?: string;
+  role: "ngo" | "user" | "admin";
+  verified: boolean;
+  avatar?: string;
+  additionalInfo?: {
+    establishementYear?: string;
+    description?: string;
+    [key: string]: any;
+  };
+  phone?: string;
+  gender?: string;
+  dob?: string;
+}
+
+interface AuthState {
+  user: User | null;
+  token: string | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+}
+
+interface AuthContextType extends AuthState {
+  login: (email: string, password: string, role: "ngo" | "user") => Promise<void>;
+  register: (email: string, password: string, role: "ngo" | "user") => Promise<void>;
+  logout: () => void;
+  updateUserProfile: (userData: Partial<User>) => Promise<void>;
+  updateAddress: (addressData: any) => Promise<void>;
+  verifyOtp: (email: string, otp: string) => Promise<void>;
+  resendOtp: (email: string) => Promise<void>;
+}
+
+const API_URL = "https://your-api-url.com"; // Replace with your actual API URL
+
+// Create the auth context
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  const [authState, setAuthState] = useState<AuthState>({
+    user: null,
+    token: localStorage.getItem("auth_token"),
+    isAuthenticated: false,
+    isLoading: true,
+  });
+
+  // Effect to check token and load user data on mount
+  useEffect(() => {
+    const loadUser = async () => {
+      const token = localStorage.getItem("auth_token");
+      if (!token) {
+        setAuthState(prev => ({ ...prev, isLoading: false }));
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_URL}/api/user/me`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (response.ok) {
+          const userData = await response.json();
+          setAuthState({
+            user: userData,
+            token,
+            isAuthenticated: true,
+            isLoading: false,
+          });
+        } else {
+          // Token invalid, clear storage
+          localStorage.removeItem("auth_token");
+          setAuthState({
+            user: null,
+            token: null,
+            isAuthenticated: false,
+            isLoading: false,
+          });
+        }
+      } catch (error) {
+        console.error("Failed to load user", error);
+        setAuthState(prev => ({ ...prev, isLoading: false }));
+      }
+    };
+
+    loadUser();
+  }, []);
+
+  // Register function
+  const register = async (email: string, password: string, role: "ngo" | "user") => {
+    try {
+      const response = await fetch(`${API_URL}/api/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password, role }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Registration failed");
+      }
+
+      toast.success("Registration successful! Please verify your email.");
+      return;
+    } catch (error: any) {
+      toast.error(error.message || "Registration failed");
+      throw error;
+    }
+  };
+
+  // Login function
+  const login = async (email: string, password: string, role: "ngo" | "user") => {
+    try {
+      const response = await fetch(`${API_URL}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password, role }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Login failed");
+      }
+
+      const data = await response.json();
+      localStorage.setItem("auth_token", data.token);
+
+      // Fetch user data with the new token
+      const userResponse = await fetch(`${API_URL}/api/user/me`, {
+        headers: {
+          Authorization: `Bearer ${data.token}`,
+        },
+      });
+
+      if (!userResponse.ok) {
+        throw new Error("Failed to fetch user data");
+      }
+
+      const userData = await userResponse.json();
+
+      setAuthState({
+        user: userData,
+        token: data.token,
+        isAuthenticated: true,
+        isLoading: false,
+      });
+      
+      toast.success("Login successful!");
+    } catch (error: any) {
+      toast.error(error.message || "Login failed");
+      throw error;
+    }
+  };
+
+  // Logout function
+  const logout = () => {
+    localStorage.removeItem("auth_token");
+    setAuthState({
+      user: null,
+      token: null,
+      isAuthenticated: false,
+      isLoading: false,
+    });
+    toast.info("You have been logged out");
+  };
+
+  // Update user profile
+  const updateUserProfile = async (userData: Partial<User>) => {
+    try {
+      if (!authState.token) throw new Error("Not authenticated");
+      
+      const response = await fetch(`${API_URL}/api/user/me`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${authState.token}`
+        },
+        body: JSON.stringify(userData),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to update profile");
+      }
+
+      const updatedUser = await response.json();
+      
+      setAuthState(prev => ({
+        ...prev,
+        user: {
+          ...prev.user!,
+          ...updatedUser
+        }
+      }));
+
+      toast.success("Profile updated successfully");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update profile");
+      throw error;
+    }
+  };
+
+  // Update address
+  const updateAddress = async (addressData: any) => {
+    try {
+      if (!authState.token) throw new Error("Not authenticated");
+      
+      const response = await fetch(`${API_URL}/api/user/address/update`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${authState.token}`
+        },
+        body: JSON.stringify(addressData),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to update address");
+      }
+
+      toast.success("Address updated successfully");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update address");
+      throw error;
+    }
+  };
+
+  // Verify OTP
+  const verifyOtp = async (email: string, otp: string) => {
+    try {
+      const response = await fetch(`${API_URL}/api/auth/otp/verify`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, otp }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to verify OTP");
+      }
+
+      const data = await response.json();
+      
+      if (data.token) {
+        localStorage.setItem("auth_token", data.token);
+        
+        // Fetch user data with the new token
+        const userResponse = await fetch(`${API_URL}/api/user/me`, {
+          headers: {
+            Authorization: `Bearer ${data.token}`,
+          },
+        });
+
+        if (!userResponse.ok) {
+          throw new Error("Failed to fetch user data");
+        }
+
+        const userData = await userResponse.json();
+
+        setAuthState({
+          user: userData,
+          token: data.token,
+          isAuthenticated: true,
+          isLoading: false,
+        });
+      }
+      
+      toast.success("Email verified successfully!");
+    } catch (error: any) {
+      toast.error(error.message || "OTP verification failed");
+      throw error;
+    }
+  };
+
+  // Resend OTP
+  const resendOtp = async (email: string) => {
+    try {
+      const response = await fetch(`${API_URL}/api/auth/otp/resend`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to resend OTP");
+      }
+
+      toast.success("OTP sent to your email");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to resend OTP");
+      throw error;
+    }
+  };
+
+  return (
+    <AuthContext.Provider value={{
+      ...authState,
+      login,
+      register,
+      logout,
+      updateUserProfile,
+      updateAddress,
+      verifyOtp,
+      resendOtp,
+    }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+// Custom hook to use auth context
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
+};
