@@ -13,7 +13,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true); // Default to open on desktop
 
   const handleLogout = () => {
     logout();
@@ -32,6 +32,18 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         { icon: Home, label: "Dashboard", path: "/dashboard" },
         { icon: Settings, label: "Settings", path: "/settings" },
       ];
+
+  const handleNavigation = (path: string) => {
+    // Handle settings button
+    if (path === "/settings") {
+      navigate("/ngo-profile");
+    } else {
+      navigate(path);
+    }
+    if (window.innerWidth < 1024) {
+      setSidebarOpen(false);
+    }
+  };
 
   return (
     <div className="flex min-h-screen bg-gray-100">
@@ -57,34 +69,34 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
       {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 w-64 transform bg-white shadow-lg transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-40 w-64 transform bg-[#006B54] shadow-lg transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         <div className="flex h-full flex-col">
           {/* Logo and branding */}
-          <div className="flex h-16 items-center border-b px-4">
-            <div className="flex items-center space-x-2 font-semibold text-green-600">
-              <div className="h-8 w-8 rounded-full bg-green-600 text-white flex items-center justify-center">VL</div>
+          <div className="flex h-16 items-center border-b border-green-700 px-4">
+            <div className="flex items-center space-x-2 font-semibold text-white">
+              <div className="h-8 w-8 rounded-full bg-amber-300 text-green-800 flex items-center justify-center">VL</div>
               <span>Volunteer Link</span>
             </div>
           </div>
 
           {/* User info */}
-          <div className="border-b p-4">
+          <div className="border-b border-green-700 p-4">
             <div className="flex items-center space-x-3">
               <div className="h-10 w-10 overflow-hidden rounded-full bg-green-100">
                 {user?.avatar ? (
                   <img src={user.avatar} alt={user.first || "User"} className="h-full w-full object-cover" />
                 ) : (
-                  <div className="flex h-full w-full items-center justify-center font-medium text-green-600">
+                  <div className="flex h-full w-full items-center justify-center font-medium text-green-800">
                     {(user?.first || "U")[0]}
                   </div>
                 )}
               </div>
               <div>
-                <p className="font-medium">{user?.first || "Welcome"}</p>
-                <p className="text-xs text-gray-500">{user?.role === "ngo" ? "Organization" : "User"}</p>
+                <p className="font-medium text-white">{user?.first || "Welcome"}</p>
+                <p className="text-xs text-green-200">{user?.role === "ngo" ? "Organization" : "User"}</p>
               </div>
             </div>
           </div>
@@ -96,18 +108,17 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 const isActive = location.pathname === item.path;
                 return (
                   <li key={item.path}>
-                    <Link
-                      to={item.path}
-                      onClick={() => setSidebarOpen(false)}
-                      className={`flex items-center space-x-3 rounded-md px-3 py-2 transition-colors ${
+                    <button
+                      onClick={() => handleNavigation(item.path)}
+                      className={`flex w-full items-center space-x-3 rounded-md px-3 py-2 transition-colors ${
                         isActive
-                          ? "bg-green-50 text-green-600"
-                          : "text-gray-700 hover:bg-gray-100"
+                          ? "bg-green-700 text-white"
+                          : "text-green-100 hover:bg-green-700/50"
                       }`}
                     >
                       <item.icon className="h-5 w-5" />
                       <span>{item.label}</span>
-                    </Link>
+                    </button>
                   </li>
                 );
               })}
@@ -117,7 +128,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   <Link
                     to="/create-event"
                     onClick={() => setSidebarOpen(false)}
-                    className="mt-6 flex items-center space-x-3 rounded-md bg-green-600 px-3 py-2 text-white transition-colors hover:bg-green-700"
+                    className="mt-6 flex items-center space-x-3 rounded-md bg-amber-300 px-3 py-2 text-green-800 transition-colors hover:bg-amber-400"
                   >
                     <Plus className="h-5 w-5" />
                     <span>Create Event</span>
@@ -128,10 +139,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           </nav>
 
           {/* Logout button */}
-          <div className="border-t p-4">
+          <div className="border-t border-green-700 p-4">
             <button
               onClick={handleLogout}
-              className="flex w-full items-center space-x-3 rounded-md px-3 py-2 text-gray-700 transition-colors hover:bg-gray-100"
+              className="flex w-full items-center space-x-3 rounded-md px-3 py-2 text-green-100 transition-colors hover:bg-green-700/50"
             >
               <LogOut className="h-5 w-5" />
               <span>Logout</span>

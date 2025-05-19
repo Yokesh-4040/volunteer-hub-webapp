@@ -74,6 +74,9 @@ export default function CreateEvent() {
         location: values.location,
       };
 
+      console.log("Submitting event data:", eventData);
+      console.log("Using token:", token);
+
       const response = await fetch(`${API_URL}/api/event/ngo/create`, {
         method: "POST",
         headers: {
@@ -83,9 +86,11 @@ export default function CreateEvent() {
         body: JSON.stringify(eventData),
       });
 
+      const responseData = await response.json();
+      console.log("API response:", responseData);
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to create event");
+        throw new Error(responseData.message || "Failed to create event");
       }
 
       // Show success toast
@@ -109,7 +114,7 @@ export default function CreateEvent() {
             <ArrowLeft className="mr-1 h-4 w-4" />
             Back to Dashboard
           </Link>
-          <h1 className="mt-2 text-2xl font-bold">Create Opportunity</h1>
+          <h1 className="mt-2 text-2xl font-bold text-green-800">Create Opportunity</h1>
           <p className="text-gray-500">Create a new volunteer opportunity for your organization</p>
         </div>
 
@@ -122,7 +127,7 @@ export default function CreateEvent() {
                 name="title"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Event Title</FormLabel>
+                    <FormLabel className="text-green-800">Event Title</FormLabel>
                     <FormControl>
                       <Input placeholder="Enter your event/opportunity name" {...field} />
                     </FormControl>
@@ -137,7 +142,7 @@ export default function CreateEvent() {
                 name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Event Description</FormLabel>
+                    <FormLabel className="text-green-800">Event Description</FormLabel>
                     <FormControl>
                       <Textarea
                         placeholder="Describe the volunteer opportunity"
@@ -158,7 +163,7 @@ export default function CreateEvent() {
                   name="startDate"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Start Date</FormLabel>
+                      <FormLabel className="text-green-800">Start Date</FormLabel>
                       <FormControl>
                         <div className="relative">
                           <Input
@@ -167,7 +172,7 @@ export default function CreateEvent() {
                             {...field}
                             min={formatDateForInput(new Date())}
                           />
-                          <Calendar className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                          <Calendar className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-green-600" />
                         </div>
                       </FormControl>
                       <FormMessage />
@@ -181,7 +186,7 @@ export default function CreateEvent() {
                   name="endDate"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>End Date</FormLabel>
+                      <FormLabel className="text-green-800">End Date</FormLabel>
                       <FormControl>
                         <div className="relative">
                           <Input
@@ -190,7 +195,7 @@ export default function CreateEvent() {
                             {...field}
                             min={form.watch("startDate") || formatDateForInput(new Date())}
                           />
-                          <Calendar className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                          <Calendar className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-green-600" />
                         </div>
                       </FormControl>
                       <FormMessage />
@@ -205,11 +210,11 @@ export default function CreateEvent() {
                 name="location"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Location</FormLabel>
+                    <FormLabel className="text-green-800">Location</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Input placeholder="Event location" {...field} className="pl-10" />
-                        <MapPin className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+                        <MapPin className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-green-600" />
                       </div>
                     </FormControl>
                     <FormMessage />
@@ -223,11 +228,11 @@ export default function CreateEvent() {
                 name="url"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>External URL (Optional)</FormLabel>
+                    <FormLabel className="text-green-800">External URL (Optional)</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Input placeholder="https://example.com" {...field} className="pl-10" />
-                        <LinkIcon className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+                        <LinkIcon className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-green-600" />
                       </div>
                     </FormControl>
                     <FormMessage />
@@ -238,7 +243,7 @@ export default function CreateEvent() {
               <div className="pt-4">
                 <Button
                   type="submit"
-                  className="w-full bg-green-600 text-white hover:bg-green-700"
+                  className="w-full bg-green-700 text-white hover:bg-green-800"
                   disabled={isLoading}
                 >
                   {isLoading ? "Creating..." : "Create Opportunity"}
