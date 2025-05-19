@@ -16,6 +16,41 @@ import { Textarea } from '@/components/ui/textarea';
 // Define the API URL
 const API_URL = "https://api.aiapplabs.io";
 
+// Add retry logic with CORS headers
+const fetchWithRetry = async (url: string, options: RequestInit, retries = 3) => {
+  const defaultHeaders = {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  };
+
+  for (let i = 0; i < retries; i++) {
+    try {
+      const response = await fetch(url, {
+        ...options,
+        headers: {
+          ...defaultHeaders,
+          ...options.headers,
+        },
+        mode: 'cors',
+        credentials: 'include',
+      });
+
+      if (response.status === 504) {
+        throw new Error('Gateway timeout - server is taking too long to respond');
+      }
+
+      return response;
+    } catch (error) {
+      if (i === retries - 1) throw error;
+      // Wait for 1 second before retrying
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+  }
+};
+
 // Years for the establishment dropdown
 const currentYear = new Date().getFullYear();
 const years = Array.from({ length: 100 }, (_, i) => (currentYear - i).toString());
@@ -67,7 +102,8 @@ export default function NGOProfile() {
       }
 
       try {
-        const response = await fetch(`${API_URL}/api/user/me`, {
+        const response = await fetchWithRetry(`${API_URL}/api/user/me`, {
+          method: 'GET',
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -93,9 +129,9 @@ export default function NGOProfile() {
           zipCode: userData.address?.zipCode || '',
           country: userData.address?.country || 'India',
         });
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error fetching user details:', error);
-        toast.error('Failed to load user details');
+        toast.error(error.message || 'Failed to load user details');
       } finally {
         setIsFetching(false);
       }

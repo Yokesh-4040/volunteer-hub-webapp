@@ -42,6 +42,41 @@ const API_URL = "https://api.aiapplabs.io"; // Updated to the correct API URL
 // Create the auth context
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Add retry logic with CORS headers
+const fetchWithRetry = async (url: string, options: RequestInit, retries = 3) => {
+  const defaultHeaders = {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  };
+
+  for (let i = 0; i < retries; i++) {
+    try {
+      const response = await fetch(url, {
+        ...options,
+        headers: {
+          ...defaultHeaders,
+          ...options.headers,
+        },
+        mode: 'cors',
+        credentials: 'include',
+      });
+
+      if (response.status === 504) {
+        throw new Error('Gateway timeout - server is taking too long to respond');
+      }
+
+      return response;
+    } catch (error) {
+      if (i === retries - 1) throw error;
+      // Wait for 1 second before retrying
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+  }
+};
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [authState, setAuthState] = useState<AuthState>({
     user: null,
@@ -171,7 +206,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     toast.info("You have been logged out");
   };
 
-  // Update user profile
+  // Update user profile with retry logic
   const updateUserProfile = async (userData: Partial<User>) => {
     try {
       if (!authState.token) throw new Error("Not authenticated");
@@ -179,10 +214,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.log('Updating user profile with data:', userData);
       console.log('Using token:', authState.token);
       
-      const response = await fetch(`${API_URL}/api/user/me`, {
+      const response = await fetchWithRetry(`${API_URL}/api/user/me`, {
         method: "POST",
         headers: { 
-          "Content-Type": "application/json",
           Authorization: `Bearer ${authState.token}`
         },
         body: JSON.stringify(userData),
@@ -215,7 +249,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Update address
+  // Update address with retry logic
   const updateAddress = async (addressData: any) => {
     try {
       if (!authState.token) throw new Error("Not authenticated");
@@ -223,10 +257,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.log('Updating address with data:', addressData);
       console.log('Using token:', authState.token);
       
-      const response = await fetch(`${API_URL}/api/user/address/update`, {
+      const response = await fetchWithRetry(`${API_URL}/api/user/address/update`, {
         method: "POST",
         headers: { 
-          "Content-Type": "application/json",
           Authorization: `Bearer ${authState.token}`
         },
         body: JSON.stringify(addressData),
