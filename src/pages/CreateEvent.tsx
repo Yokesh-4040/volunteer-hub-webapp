@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -39,6 +39,13 @@ const eventSchema = z.object({
   endDate: z.string().min(1, { message: "End date is required" }),
   url: z.string().url({ message: "Please enter a valid URL" }).optional().or(z.literal("")),
   location: z.string().min(1, { message: "Location is required" }),
+}).refine((data) => {
+  const startDate = new Date(data.startDate);
+  const endDate = new Date(data.endDate);
+  return endDate >= startDate;
+}, {
+  message: "End date must be after start date",
+  path: ["endDate"],
 });
 
 type EventFormValues = z.infer<typeof eventSchema>;
@@ -47,6 +54,7 @@ export default function CreateEvent() {
   const navigate = useNavigate();
   const { token } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
   
   const form = useForm<EventFormValues>({
     resolver: zodResolver(eventSchema),
@@ -59,6 +67,27 @@ export default function CreateEvent() {
       location: "",
     },
   });
+
+  // Track form changes
+  useEffect(() => {
+    const subscription = form.watch(() => {
+      setIsDirty(true);
+    });
+    return () => subscription.unsubscribe();
+  }, [form.watch]);
+
+  // Handle page leave
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isDirty]);
 
   // Function to format date for input field
   const formatDateForInput = (date: Date) => {
@@ -175,7 +204,14 @@ export default function CreateEvent() {
           <p className="text-gray-500">Create a new volunteer opportunity for your organization</p>
         </div>
 
-        <div className="rounded-lg border bg-white p-6 shadow-sm">
+        <div className="rounded-lg border bg-white p-6 shadow-sm relative">
+          {isLoading && (
+            <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/50 backdrop-blur-sm">
+              <div className="rounded-lg bg-white p-4 shadow-lg">
+                <p className="text-green-800">Creating event...</p>
+              </div>
+            </div>
+          )}
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               {/* Title */}
@@ -228,6 +264,7 @@ export default function CreateEvent() {
                             placeholder="Select start date"
                             {...field}
                             min={formatDateForInput(new Date())}
+                            max={formatDateForInput(new Date(new Date().setFullYear(new Date().getFullYear() + 1)))}
                           />
                           <Calendar className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-green-600" />
                         </div>
@@ -251,6 +288,7 @@ export default function CreateEvent() {
                             placeholder="Select end date"
                             {...field}
                             min={form.watch("startDate") || formatDateForInput(new Date())}
+                            max={formatDateForInput(new Date(new Date().setFullYear(new Date().getFullYear() + 1)))}
                           />
                           <Calendar className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-green-600" />
                         </div>
@@ -288,7 +326,15 @@ export default function CreateEvent() {
                     <FormLabel className="text-green-800">External URL (Optional)</FormLabel>
                     <FormControl>
                       <div className="relative">
-                        <Input placeholder="https://example.com" {...field} className="pl-10" />
+                        <Input 
+                          placeholder="https://example.com" 
+                          {...field} 
+                          className="pl-10"
+                          onChange={(e) => {
+                            const value = e.target.value.trim();
+                            field.onChange(value || "");
+                          }}
+                        />
                         <LinkIcon className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-green-600" />
                       </div>
                     </FormControl>
