@@ -95,7 +95,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       try {
-        const response = await fetch(`${API_URL}/api/user/me`, {
+        const response = await fetchWithRetry(`${API_URL}/api/user/me`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -167,8 +167,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const data = await response.json();
       localStorage.setItem("auth_token", data.token);
 
-      // Fetch user data with the new token
-      const userResponse = await fetch(`${API_URL}/api/user/me`, {
+      // Fetch user data with the new token - this needs fetchWithRetry since it's authenticated
+      const userResponse = await fetchWithRetry(`${API_URL}/api/user/me`, {
         headers: {
           Authorization: `Bearer ${data.token}`,
         },
