@@ -47,9 +47,6 @@ const fetchWithRetry = async (url: string, options: RequestInit, retries = 3) =>
   const defaultHeaders = {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   };
 
   for (let i = 0; i < retries; i++) {
@@ -60,7 +57,6 @@ const fetchWithRetry = async (url: string, options: RequestInit, retries = 3) =>
           ...defaultHeaders,
           ...options.headers,
         },
-        mode: 'cors',
       });
 
       if (response.status === 504) {
