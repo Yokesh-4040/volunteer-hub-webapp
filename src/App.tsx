@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -14,6 +13,7 @@ import NGODashboard from "./pages/NGODashboard";
 import CreateEvent from "./pages/CreateEvent";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
+import VersionOverlay from "./components/VersionOverlay";
 
 const queryClient = new QueryClient();
 
@@ -69,6 +69,7 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
+        <VersionOverlay />
       </TooltipProvider>
     </AuthProvider>
   </QueryClientProvider>

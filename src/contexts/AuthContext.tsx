@@ -85,11 +85,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const loadUser = async () => {
       const token = localStorage.getItem("auth_token");
       if (!token) {
+        console.log('No token found, setting auth state to unauthenticated');
         setAuthState(prev => ({ ...prev, isLoading: false }));
         return;
       }
 
       try {
+        console.log('Fetching user data with token:', token);
         const response = await fetchWithRetry(`${API_URL}/api/user/me`, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -98,6 +100,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         if (response.ok) {
           const userData = await response.json();
+          console.log('Successfully loaded user data:', userData);
           setAuthState({
             user: userData,
             token,
@@ -105,6 +108,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             isLoading: false,
           });
         } else {
+          console.log('Failed to fetch user data, clearing auth state');
           // Token invalid, clear storage
           localStorage.removeItem("auth_token");
           setAuthState({
@@ -115,7 +119,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           });
         }
       } catch (error) {
-        console.error("Failed to load user", error);
+        console.error("Failed to load user:", error);
         setAuthState(prev => ({ ...prev, isLoading: false }));
       }
     };
