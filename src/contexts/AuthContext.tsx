@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { toast } from "sonner";
 
@@ -18,6 +19,13 @@ interface User {
   phone?: string;
   gender?: string;
   dob?: string;
+  address?: {
+    street?: string;
+    city?: string;
+    state?: string;
+    zipCode?: string;
+    country?: string;
+  };
 }
 
 interface AuthState {
@@ -95,14 +103,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       try {
-        const response = await fetch(`${API_URL}/api/user/me`, {
+        // Use fetchWithRetry instead of fetch
+        const response = await fetchWithRetry(`${API_URL}/api/user/me`, {
+          method: 'GET',
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
 
         if (response.ok) {
-          const userData = await response.json();
+          const responseData = await response.json();
+          // Check for a nested user object in the response
+          const userData = responseData.user || responseData;
+          
+          console.log("User data loaded successfully:", userData);
+          
           setAuthState({
             user: userData,
             token,
@@ -110,6 +125,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             isLoading: false,
           });
         } else {
+          console.error("Failed to load user, invalid token response:", response.status);
           // Token invalid, clear storage
           localStorage.removeItem("auth_token");
           setAuthState({
@@ -131,9 +147,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Register function
   const register = async (email: string, password: string, role: "ngo" | "user") => {
     try {
-      const response = await fetch(`${API_URL}/api/auth/register`, {
+      // Use fetchWithRetry instead of fetch
+      const response = await fetchWithRetry(`${API_URL}/api/auth/register`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password, role }),
       });
 
@@ -153,9 +169,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Login function
   const login = async (email: string, password: string, role: "ngo" | "user") => {
     try {
-      const response = await fetch(`${API_URL}/api/auth/login`, {
+      console.log("Attempting login with:", { email, role });
+      
+      // Use fetchWithRetry instead of fetch
+      const response = await fetchWithRetry(`${API_URL}/api/auth/login`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password, role }),
       });
 
@@ -166,19 +184,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       const data = await response.json();
       localStorage.setItem("auth_token", data.token);
+      console.log("Login successful, token received");
 
       // Fetch user data with the new token
-      const userResponse = await fetch(`${API_URL}/api/user/me`, {
+      const userResponse = await fetchWithRetry(`${API_URL}/api/user/me`, {
+        method: 'GET',
         headers: {
           Authorization: `Bearer ${data.token}`,
         },
       });
 
       if (!userResponse.ok) {
+        console.error("Failed to fetch user data after login:", userResponse.status);
         throw new Error("Failed to fetch user data");
       }
 
-      const userData = await userResponse.json();
+      const responseData = await userResponse.json();
+      // Check for a nested user object in the response
+      const userData = responseData.user || responseData;
+      
+      console.log("User data fetched after login:", userData);
 
       setAuthState({
         user: userData,
@@ -189,6 +214,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       toast.success("Login successful!");
     } catch (error: any) {
+      console.error("Login error:", error);
       toast.error(error.message || "Login failed");
       throw error;
     }
@@ -274,6 +300,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       console.log('Address update successful');
+      
+      // Update the user object with the new address
+      if (authState.user) {
+        setAuthState(prev => ({
+          ...prev,
+          user: {
+            ...prev.user!,
+            address: addressData
+          }
+        }));
+      }
+      
       toast.success("Address updated successfully");
     } catch (error: any) {
       console.error('Address update error:', error);
@@ -285,9 +323,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Verify OTP
   const verifyOtp = async (email: string, otp: string) => {
     try {
-      const response = await fetch(`${API_URL}/api/auth/otp/verify`, {
+      // Use fetchWithRetry instead of fetch
+      const response = await fetchWithRetry(`${API_URL}/api/auth/otp/verify`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, otp }),
       });
 
@@ -302,7 +340,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         localStorage.setItem("auth_token", data.token);
         
         // Fetch user data with the new token
-        const userResponse = await fetch(`${API_URL}/api/user/me`, {
+        const userResponse = await fetchWithRetry(`${API_URL}/api/user/me`, {
+          method: 'GET',
           headers: {
             Authorization: `Bearer ${data.token}`,
           },
@@ -312,7 +351,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           throw new Error("Failed to fetch user data");
         }
 
-        const userData = await userResponse.json();
+        const responseData = await userResponse.json();
+        // Check for a nested user object in the response
+        const userData = responseData.user || responseData;
 
         setAuthState({
           user: userData,
@@ -332,9 +373,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Resend OTP
   const resendOtp = async (email: string) => {
     try {
-      const response = await fetch(`${API_URL}/api/auth/otp/resend`, {
+      // Use fetchWithRetry instead of fetch
+      const response = await fetchWithRetry(`${API_URL}/api/auth/otp/resend`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       });
 
