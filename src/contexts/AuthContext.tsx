@@ -61,7 +61,6 @@ const fetchWithRetry = async (url: string, options: RequestInit, retries = 3) =>
           ...options.headers,
         },
         mode: 'cors',
-        credentials: 'include',
       });
 
       if (response.status === 504) {
