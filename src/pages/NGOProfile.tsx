@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -94,39 +93,11 @@ export default function NGOProfile() {
     },
   });
 
-  // Use the user data from auth context if available
-  useEffect(() => {
-    if (user) {
-      console.log('User data from context:', user);
-      
-      form.reset({
-        first: user.first || '',
-        phone: user.phone || '',
-        establishementYear: user.additionalInfo?.establishementYear || '',
-        description: user.additionalInfo?.description || '',
-        organizationType: user.additionalInfo?.organizationType || '',
-        street: user.address?.street || '',
-        city: user.address?.city || '',
-        state: user.address?.state || '',
-        zipCode: user.address?.zipCode || '',
-        country: user.address?.country || 'India',
-      });
-      
-      setIsFetching(false);
-    }
-  }, [user, form]);
-
-  // Fetch user details when component mounts if not available in context
+  // Fetch user details when component mounts
   useEffect(() => {
     const fetchUserDetails = async () => {
       if (!token) {
         navigate('/login');
-        return;
-      }
-
-      // Only fetch if user data is not already in context
-      if (user) {
-        setIsFetching(false);
         return;
       }
 
@@ -138,13 +109,11 @@ export default function NGOProfile() {
           },
         });
 
-        if (!response?.ok) {
+        if (!response.ok) {
           throw new Error('Failed to fetch user details');
         }
 
-        const responseData = await response.json();
-        const userData = responseData.user || responseData; // Handle both response formats
-        
+        const userData = await response.json();
         console.log('Fetched user data:', userData);
 
         // Update form with fetched data
@@ -169,7 +138,7 @@ export default function NGOProfile() {
     };
 
     fetchUserDetails();
-  }, [token, form, navigate, user]);
+  }, [token, form, navigate]);
 
   async function onSubmit(data: NGOProfileFormValues) {
     setIsLoading(true);
