@@ -157,10 +157,12 @@ export default function NGOProfile() {
         zipCode: data.zipCode,
         country: data.country,
       });
-      
+
+      toast.success('Profile updated successfully');
       navigate('/dashboard');
-    } catch (error) {
-      console.error(error);
+    } catch (error: any) {
+      console.error('Error updating profile:', error);
+      toast.error(error.message || 'Failed to update profile');
     } finally {
       setIsLoading(false);
     }
