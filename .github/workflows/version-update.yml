@@ -1,0 +1,66 @@
+name: Update Version
+
+on:
+  push:
+    branches:
+      - main  # or your default branch
+
+jobs:
+  update-version:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Get commit message
+        id: commit
+        run: |
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+          echo "message=$COMMIT_MSG" >> $GITHUB_OUTPUT
+
+      - name: Update version
+        run: |
+          # Read current version
+          VERSION_FILE="src/config/version.ts"
+          MAJOR=$(grep -o 'major: [0-9]*' $VERSION_FILE | cut -d' ' -f2)
+          MINOR=$(grep -o 'minor: [0-9]*' $VERSION_FILE | cut -d' ' -f2)
+          PATCH=$(grep -o 'patch: [0-9]*' $VERSION_FILE | cut -d' ' -f2)
+          
+          # Get commit SHA
+          SHA=$(git rev-parse --short HEAD)
+          
+          # Update version based on commit message
+          if [[ "${{ steps.commit.outputs.message }}" == *"[major]"* ]]; then
+            MAJOR=$((MAJOR + 1))
+            MINOR=0
+            PATCH=0
+          elif [[ "${{ steps.commit.outputs.message }}" == *"[minor]"* ]]; then
+            MINOR=$((MINOR + 1))
+            PATCH=0
+          elif [[ "${{ steps.commit.outputs.message }}" == *"[patch]"* ]]; then
+            PATCH=$((PATCH + 1))
+          fi
+          
+          # Update version file
+          sed -i "s/major: [0-9]*/major: $MAJOR/" $VERSION_FILE
+          sed -i "s/minor: [0-9]*/minor: $MINOR/" $VERSION_FILE
+          sed -i "s/patch: [0-9]*/patch: $PATCH/" $VERSION_FILE
+          sed -i "s/build: .*?,/build: '$SHA',/" $VERSION_FILE
+          
+          echo "Updated version to v$MAJOR.$MINOR.$PATCH-$SHA"
+
+      - name: Commit changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add src/config/version.ts
+          git commit -m "chore: update version [skip ci]" || exit 0
+          git push 
