@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
@@ -16,20 +17,6 @@ import { toast } from "sonner";
 
 // Define the correct API URL
 const API_URL = "https://api.aiapplabs.io";
-
-// Add retry logic
-const fetchWithRetry = async (url: string, options: RequestInit, retries = 3) => {
-  for (let i = 0; i < retries; i++) {
-    try {
-      const response = await fetch(url, options);
-      return response;
-    } catch (error) {
-      if (i === retries - 1) throw error;
-      // Wait for 1 second before retrying
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    }
-  }
-};
 
 // Schema for form validation
 const eventSchema = z.object({
@@ -133,52 +120,57 @@ export default function CreateEvent() {
         body: eventData
       });
 
-      // Create AbortController for timeout
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000);
-
-      try {
-        const response = await fetch(`${API_URL}/api/event/ngo/create`, {
-          method: "POST",
-          headers,
-          body: JSON.stringify(eventData),
-          signal: controller.signal,
+      // Use XMLHttpRequest for better timeout and error handling
+      const response = await new Promise<any>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        
+        xhr.open("POST", `${API_URL}/api/event/ngo/create`, true);
+        
+        // Set headers
+        Object.entries(headers).forEach(([key, value]) => {
+          xhr.setRequestHeader(key, value);
         });
+        
+        // Set timeout to 30 seconds
+        xhr.timeout = 30000;
+        
+        xhr.onload = function() {
+          if (this.status >= 200 && this.status < 300) {
+            try {
+              const data = JSON.parse(xhr.responseText);
+              resolve({ ok: true, status: this.status, data });
+            } catch (e) {
+              reject(new Error("Invalid JSON response"));
+            }
+          } else {
+            try {
+              const errorData = JSON.parse(xhr.responseText);
+              reject(new Error(errorData.message || `HTTP error! status: ${this.status}`));
+            } catch (e) {
+              reject(new Error(`HTTP error! status: ${this.status}`));
+            }
+          }
+        };
+        
+        xhr.ontimeout = function() {
+          reject(new Error("Request timed out - server might be busy. Please try again later."));
+        };
+        
+        xhr.onerror = function() {
+          reject(new Error("Network error occurred. Please check your connection."));
+        };
+        
+        xhr.send(JSON.stringify(eventData));
+      });
 
-        clearTimeout(timeoutId);
-
-        // Log response details
-        console.log("Response details:", {
-          status: response.status,
-          statusText: response.statusText,
-          headers: Object.fromEntries(response.headers.entries()),
-          url: response.url
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({ message: "Unknown error occurred" }));
-          console.error("API Error Response:", {
-            status: response.status,
-            statusText: response.statusText,
-            error: errorData,
-            url: response.url
-          });
-          throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-        }
-
-        const responseData = await response.json();
-        console.log("API response:", responseData);
-
+      if (response.ok) {
+        console.log("API response:", response.data);
         // Show success toast
         toast.success("Event created successfully!");
-        
         // On success, navigate to events page
         navigate("/dashboard", { state: { eventCreated: true } });
-      } catch (fetchError: any) {
-        if (fetchError.name === 'AbortError') {
-          throw new Error("Request timed out. Please check your internet connection and try again.");
-        }
-        throw fetchError;
+      } else {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
     } catch (error: any) {
       console.error("Error creating event:", {

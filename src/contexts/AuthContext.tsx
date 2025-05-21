@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { toast } from "sonner";
 
@@ -19,6 +18,15 @@ interface User {
   phone?: string;
   gender?: string;
   dob?: string;
+  address?: {
+    id: number;
+    street: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    country: string;
+    userId: number;
+  };
 }
 
 interface AuthState {
