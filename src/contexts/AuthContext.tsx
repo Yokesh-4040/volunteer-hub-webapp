@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { toast } from "sonner";
 
@@ -13,6 +14,7 @@ interface User {
   additionalInfo?: {
     establishementYear?: string;
     description?: string;
+    organizationType?: string;
     [key: string]: any;
   };
   phone?: string;
