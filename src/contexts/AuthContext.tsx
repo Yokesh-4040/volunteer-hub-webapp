@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { toast } from "sonner";
 
@@ -99,8 +100,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         });
 
         if (response.ok) {
-          const userData = await response.json();
-          console.log('Successfully loaded user data:', userData);
+          const data = await response.json();
+          console.log('Successfully loaded user data:', data);
+          
+          // Check if the response has a nested user object
+          const userData = data.user || data;
+          
           setAuthState({
             user: userData,
             token,
@@ -191,9 +196,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const userData = await userResponse.json();
       console.log('User data fetched successfully:', userData);
 
+      // Extract user data from the response (it might be nested under 'user')
+      const user = userData.user || userData;
+
       // Update auth state
       setAuthState({
-        user: userData,
+        user: user,
         token: data.token,
         isAuthenticated: true,
         isLoading: false,
@@ -234,6 +242,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const response = await fetchWithRetry(`${API_URL}/api/user/me`, {
         method: "POST",
         headers: { 
+          "Content-Type": "application/json",
           Authorization: `Bearer ${authState.token}`
         },
         body: JSON.stringify(userData),
@@ -247,8 +256,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         throw new Error(error.message || "Failed to update profile");
       }
 
-      const updatedUser = await response.json();
-      console.log('Profile update successful:', updatedUser);
+      const data = await response.json();
+      console.log('Profile update successful:', data);
+      
+      // Extract user data from the response (it might be nested under 'user')
+      const updatedUser = data.user || data;
       
       setAuthState(prev => ({
         ...prev,

@@ -5,6 +5,7 @@ import { Plus, Calendar, CheckCircle, Clock, AlertCircle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
+import DashboardLayout from "@/components/layouts/DashboardLayout";
 
 interface Event {
   id: string;
@@ -80,7 +81,8 @@ export default function NGODashboard() {
     });
   };
 
-  return (
+  // Display the dashboard content
+  const renderDashboardContent = () => (
     <div className="space-y-6">
       {/* Welcome Section */}
       <Card className="overflow-hidden bg-amber-50">
@@ -262,5 +264,11 @@ export default function NGODashboard() {
         </Card>
       )}
     </div>
+  );
+
+  return (
+    <DashboardLayout>
+      {renderDashboardContent()}
+    </DashboardLayout>
   );
 }
