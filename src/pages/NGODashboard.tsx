@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Plus, Calendar, CheckCircle, Clock, AlertCircle } from "lucide-react";
+import { Plus, Calendar, CheckCircle, Clock, AlertCircle, Users } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -183,13 +183,25 @@ export default function NGODashboard() {
                         {event.participants?.pending || 0} pending
                       </span>
                     </div>
-                    <Button 
-                      asChild 
-                      variant="outline" 
-                      className="mt-4 w-full"
-                    >
-                      <Link to={`/events/${event.id}`}>Manage Event</Link>
-                    </Button>
+                    <div className="mt-4 flex flex-col space-y-2">
+                      <Button 
+                        asChild 
+                        variant="outline" 
+                        className="w-full"
+                      >
+                        <Link to={`/events/${event.id}`}>Manage Event</Link>
+                      </Button>
+                      <Button 
+                        asChild 
+                        variant="outline" 
+                        className="w-full bg-blue-50 text-blue-700 hover:bg-blue-100"
+                      >
+                        <Link to={`/events/${event.id}/participants`}>
+                          <Users className="mr-1 h-4 w-4" />
+                          Manage Participants
+                        </Link>
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               ))}
@@ -249,13 +261,25 @@ export default function NGODashboard() {
                         {event.participants?.accepted || 0} participated
                       </span>
                     </div>
-                    <Button 
-                      asChild 
-                      variant="outline" 
-                      className="mt-4 w-full"
-                    >
-                      <Link to={`/events/${event.id}`}>View Details</Link>
-                    </Button>
+                    <div className="mt-4 flex flex-col space-y-2">
+                      <Button 
+                        asChild 
+                        variant="outline" 
+                        className="w-full"
+                      >
+                        <Link to={`/events/${event.id}`}>View Details</Link>
+                      </Button>
+                      <Button 
+                        asChild 
+                        variant="outline" 
+                        className="w-full bg-blue-50 text-blue-700 hover:bg-blue-100"
+                      >
+                        <Link to={`/events/${event.id}/participants`}>
+                          <Users className="mr-1 h-4 w-4" />
+                          View Participants
+                        </Link>
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               ))}
