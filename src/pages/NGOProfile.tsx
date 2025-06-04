@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -12,6 +13,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
 import { Textarea } from '@/components/ui/textarea';
+import DashboardLayout from '@/components/layouts/DashboardLayout';
 
 // Define the API URL
 const API_URL = "https://api.aiapplabs.io";
@@ -88,52 +90,27 @@ export default function NGOProfile() {
     },
   });
 
-  // Fetch user details when component mounts
+  // Fill the form with user data when it becomes available
   useEffect(() => {
-    const fetchUserDetails = async () => {
-      if (!token) {
-        navigate('/login');
-        return;
-      }
-
-      try {
-        const response = await fetchWithRetry(`${API_URL}/api/user/me`, {
-          method: 'GET',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch user details');
-        }
-
-        const userData = await response.json();
-        console.log('Fetched user data:', userData);
-
-        // Update form with fetched data
-        form.reset({
-          first: userData.first || '',
-          phone: userData.phone || '',
-          establishementYear: userData.additionalInfo?.establishementYear || '',
-          description: userData.additionalInfo?.description || '',
-          organizationType: userData.additionalInfo?.organizationType || '',
-          street: userData.address?.street || '',
-          city: userData.address?.city || '',
-          state: userData.address?.state || '',
-          zipCode: userData.address?.zipCode || '',
-          country: userData.address?.country || 'India',
-        });
-      } catch (error: any) {
-        console.error('Error fetching user details:', error);
-        toast.error(error.message || 'Failed to load user details');
-      } finally {
-        setIsFetching(false);
-      }
-    };
-
-    fetchUserDetails();
-  }, [token, form, navigate]);
+    if (user) {
+      console.log('Setting form values from user data:', user);
+      
+      form.reset({
+        first: user.first || '',
+        phone: user.phone || '',
+        establishementYear: user.additionalInfo?.establishementYear || '',
+        description: user.additionalInfo?.description || '',
+        organizationType: user.additionalInfo?.organizationType || '',
+        street: user.address?.street || '',
+        city: user.address?.city || '',
+        state: user.address?.state || '',
+        zipCode: user.address?.zipCode || '',
+        country: user.address?.country || 'India',
+      });
+      
+      setIsFetching(false);
+    }
+  }, [user, form]);
 
   async function onSubmit(data: NGOProfileFormValues) {
     setIsLoading(true);
@@ -168,7 +145,7 @@ export default function NGOProfile() {
     }
   }
 
-  return (
+  const renderProfileForm = () => (
     <div className="flex min-h-screen items-center justify-center bg-gray-100 px-4 py-12">
       <div className="w-full max-w-2xl space-y-8">
         <div className="text-center">
@@ -227,6 +204,7 @@ export default function NGOProfile() {
                         <Select 
                           onValueChange={field.onChange} 
                           defaultValue={field.value}
+                          value={field.value}
                         >
                           <FormControl>
                             <SelectTrigger>
@@ -363,7 +341,7 @@ export default function NGOProfile() {
                       className="w-full bg-green-600 text-white hover:bg-green-700"
                       disabled={isLoading}
                     >
-                      {isLoading ? "Saving..." : "Sign up"}
+                      {isLoading ? "Saving..." : "Update Profile"}
                     </Button>
                   </div>
                   
@@ -379,5 +357,11 @@ export default function NGOProfile() {
         </Card>
       </div>
     </div>
+  );
+
+  return (
+    <DashboardLayout>
+      {renderProfileForm()}
+    </DashboardLayout>
   );
 }
