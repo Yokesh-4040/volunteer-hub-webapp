@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Plus, Calendar, CheckCircle, Clock, AlertCircle } from "lucide-react";
@@ -186,7 +185,7 @@ export default function NGODashboard() {
                       variant="outline" 
                       className="mt-4 w-full"
                     >
-                      <Link to={`/events/${event.id}`}>Manage Event</Link>
+                      <Link to={`/events/${event.id}/participants`}>Manage Participants</Link>
                     </Button>
                   </CardContent>
                 </Card>
@@ -252,7 +251,7 @@ export default function NGODashboard() {
                       variant="outline" 
                       className="mt-4 w-full"
                     >
-                      <Link to={`/events/${event.id}`}>View Details</Link>
+                      <Link to={`/events/${event.id}/participants`}>Manage Participants</Link>
                     </Button>
                   </CardContent>
                 </Card>

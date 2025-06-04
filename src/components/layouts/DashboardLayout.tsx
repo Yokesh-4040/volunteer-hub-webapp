@@ -1,4 +1,3 @@
-
 import { ReactNode, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Calendar, Home, LogOut, Menu, Plus, Settings, Users, X } from "lucide-react";
@@ -24,8 +23,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const navItems = user?.role === "ngo" 
     ? [
         { icon: Home, label: "Dashboard", path: "/dashboard" },
-        { icon: Calendar, label: "Events", path: "/events" },
-        { icon: Users, label: "Volunteers", path: "/volunteers" },
         { icon: Settings, label: "Settings", path: "/settings" },
       ]
     : [

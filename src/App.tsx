@@ -11,6 +11,7 @@ import VerifyOTP from "./pages/VerifyOTP";
 import NGOProfile from "./pages/NGOProfile";
 import NGODashboard from "./pages/NGODashboard";
 import CreateEvent from "./pages/CreateEvent";
+import EventParticipants from "./pages/EventParticipants";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import VersionOverlay from "./components/VersionOverlay";
@@ -53,6 +54,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <CreateEvent />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/events/:eventId/participants" 
+              element={
+                <ProtectedRoute>
+                  <EventParticipants />
                 </ProtectedRoute>
               } 
             />
