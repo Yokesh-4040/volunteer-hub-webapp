@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Plus, Calendar, CheckCircle, Clock, AlertCircle } from "lucide-react";
@@ -7,6 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 
 interface Event {
   id: string;
+  uuid?: string; // Add uuid field as backup
   title: string;
   description: string;
   startDate: string;
@@ -47,9 +49,11 @@ export default function NGODashboard() {
         }
 
         const data = await response.json();
+        console.log('Events API response:', data); // Debug log
         
         // For this example, we'll mock the data structure
         const mockEvents = data.data || [];
+        console.log('Processed events:', mockEvents); // Debug log
         setEvents(mockEvents);
         
         // Filter events based on dates
@@ -77,6 +81,13 @@ export default function NGODashboard() {
       month: 'short',
       year: 'numeric'
     });
+  };
+
+  // Function to get the correct event identifier
+  const getEventId = (event: Event) => {
+    const eventId = event.uuid || event.id;
+    console.log('Event ID for navigation:', eventId, 'Event object:', event); // Debug log
+    return eventId;
   };
 
   return (
@@ -185,7 +196,7 @@ export default function NGODashboard() {
                       variant="outline" 
                       className="mt-4 w-full"
                     >
-                      <Link to={`/events/${event.id}/participants`}>Manage Participants</Link>
+                      <Link to={`/events/${getEventId(event)}/participants`}>Manage Participants</Link>
                     </Button>
                   </CardContent>
                 </Card>
@@ -251,7 +262,7 @@ export default function NGODashboard() {
                       variant="outline" 
                       className="mt-4 w-full"
                     >
-                      <Link to={`/events/${event.id}/participants`}>Manage Participants</Link>
+                      <Link to={`/events/${getEventId(event)}/participants`}>Manage Participants</Link>
                     </Button>
                   </CardContent>
                 </Card>
