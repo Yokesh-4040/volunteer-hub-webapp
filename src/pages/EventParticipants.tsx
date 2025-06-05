@@ -19,17 +19,17 @@ interface Participant {
 }
 
 export default function EventParticipants() {
-  const { eventId } = useParams();
+  const { eventId: eventUUID } = useParams();
   const { token } = useAuth();
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchParticipants = async () => {
-      if (!token || !eventId) return;
+      if (!token || !eventUUID) return;
 
       try {
-        const response = await fetch(`${API_URL}/api/event/${eventId}`, {
+        const response = await fetch(`${API_URL}/api/event/participants/${eventUUID}`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -50,10 +50,10 @@ export default function EventParticipants() {
     };
 
     fetchParticipants();
-  }, [token, eventId]);
+  }, [token, eventUUID]);
 
   const handleStatusUpdate = async (participantId: string, newStatus: 'ACCEPTED' | 'REJECTED') => {
-    if (!token || !eventId) return;
+    if (!token || !eventUUID) return;
 
     try {
       const response = await fetch(`${API_URL}/api/event/participant/update/status`, {
@@ -63,7 +63,7 @@ export default function EventParticipants() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          eventId,
+          eventId: eventUUID,
           userId: participantId,
           status: newStatus
         }),
